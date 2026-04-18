@@ -1,0 +1,46 @@
+[Unit]
+Description=Encruzilhada3D / Reef — tick-by-tick survival ecosystem
+Documentation=file:%h/Videos/enc_v2/encruzilhada3d/README.md
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Videos/enc_v2
+
+# Run inside the project's venv. Adjust if yours differs.
+Environment=PATH=%h/mfv3_venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=ENC3D_DATA_ROOT=%h/apex_data
+Environment=ENC3D_STATE_ROOT=%h/state/encruzilhada3d
+Environment=PYTHONUNBUFFERED=1
+
+# Loop: one run every 30 minutes. Tune via ExecStart args.
+# The --synthetic flag is REMOVED for production; if your data dir is empty,
+# encruzilhada3d will still fall back to synthetic automatically.
+ExecStart=%h/mfv3_venv/bin/python -m encruzilhada3d \
+  --symbol ADAUSDT \
+  --pop 80 \
+  --ticks 5000 \
+  --gens 3 \
+  --days 1.0 \
+  --render-html
+
+# Restart policy: come back on crash, not on clean exit.
+Restart=on-failure
+RestartSec=30
+
+# Resource containment — the Reef must NEVER starve live trading.
+# Adjust down if the host is smaller.
+Nice=15
+CPUQuota=80%
+MemoryMax=2G
+MemorySwapMax=0
+
+# Filesystem hardening
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/state %h/Videos/enc_v2/state
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
